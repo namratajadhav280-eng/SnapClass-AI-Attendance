@@ -1,0 +1,120 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SnapClass AI Attendance</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f3f1ff;color:#292747}
+header{background:linear-gradient(120deg,#5145e5,#8272ff);color:white;padding:30px 20px;border-radius:0 0 35px 35px}
+header h1{font-size:34px;margin:8px 0}
+header p{font-size:18px}
+main{max-width:700px;margin:24px auto;padding:0 15px}
+.card{background:white;padding:22px;border-radius:25px;margin-bottom:22px;box-shadow:0 6px 22px #2221}
+.stats{display:flex;gap:10px;text-align:center}
+.stat{flex:1;background:#f0eeff;padding:15px 4px;border-radius:18px}
+.stat strong{display:block;font-size:28px;color:#6254e8}
+label{display:block;font-weight:bold;margin:18px 0 8px}
+select,input,button{font-size:16px;padding:13px;border-radius:12px;width:100%;margin-bottom:10px}
+select,input{border:1px solid #ccc;background:white}
+button{border:0;background:#5b4ce8;color:white;font-weight:bold;cursor:pointer}
+.dark{background:#262432}
+.pink{background:#e9469a}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px 5px;border-bottom:1px solid #ddd;text-align:left}
+.smallbtn{width:auto;padding:8px;font-size:13px}
+.note{color:#6254e8;font-size:14px}
+</style>
+</head>
+<body>
+<header>
+<h1>📸 SnapClass</h1>
+<p>AI-Powered Smart Attendance System</p>
+✨ Attendance made smarter!
+</header>
+<main>
+<section class="card">
+<h2>📊 Attendance Dashboard</h2>
+<div class="stats">
+<div class="stat"><strong id="total">0</strong>Students</div>
+<div class="stat"><strong id="present">0</strong>Present</div>
+<div class="stat"><strong id="absent">0</strong>Absent</div>
+</div>
+</section>
+<section class="card">
+<h2>📚 Take Attendance</h2>
+<label for="subject">Select Subject</label>
+<select id="subject">
+<option>Artificial Intelligence</option>
+<option>Computer Science</option>
+<option>Physics</option>
+<option>Mathematics</option>
+<option>Programming</option>
+</select>
+<label for="photos">Upload Student Photos</label>
+<input id="photos" type="file" accept="image/*" multiple>
+<button id="add">➕ Add Photos</button>
+<button id="clear" class="dark">🗑️ Clear All</button>
+<p id="message" class="note">Upload photos to start your attendance demo.</p>
+<p>This demo simulates attendance. It does not perform AI face recognition.</p>
+</section>
+<section class="card">
+<h2>🧑‍🎓 Student Attendance</h2>
+<div style="overflow-x:auto">
+<table>
+<thead><tr><th>Student</th><th>Status</th><th>Action</th></tr></thead>
+<tbody id="rows"></tbody>
+</table>
+</div>
+<br>
+<button id="csv" class="pink">⬇️ Download CSV Report</button>
+<button id="copy" class="dark">Copy CSV Text</button>
+<textarea id="csvtext" style="width:100%;height:100px;display:none"></textarea>
+</section>
+</main>
+<script>
+let students=[];
+const $=id=>document.getElementById(id);
+function render(){
+$('rows').innerHTML=students.map((s,i)=>`<tr><td>${s.name.replace(/[&<>"]/g,'')}</td><td><select onchange="students[${i}].status=this.value;renderStats()"><option ${s.status==='Present'?'selected':''}>Present</option><option ${s.status==='Absent'?'selected':''}>Absent</option></select></td><td><button class="smallbtn dark" onclick="students.splice(${i},1);render()">Remove</button></td></tr>`).join('');
+renderStats();
+}
+function renderStats(){
+$('total').textContent=students.length;
+$('present').textContent=students.filter(s=>s.status==='Present').length;
+$('absent').textContent=students.filter(s=>s.status==='Absent').length;
+}
+$('add').onclick=()=>{
+const files=Array.from($('photos').files);
+if(!files.length){$('message').textContent='Please choose one or more student photos first.';return}
+files.forEach(f=>students.push({name:f.name.replace(/\.[^.]+$/,''),subject:$('subject').value,status:'Present'}));
+$('message').textContent=files.length+' student photo(s) added. Attendance is simulated.';
+$('photos').value='';
+render();
+};
+$('clear').onclick=()=>{students=[];$('photos').value='';$('message').textContent='All records cleared.';render()};
+function csvData(){
+return '\uFEFF'+[['Student Name','Subject','Attendance Status'],...students.map(s=>[s.name,s.subject,s.status])].map(row=>row.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');
+}
+$('csv').onclick=()=>{
+if(!students.length){$('message').textContent='Add student photos before downloading the report.';return}
+const blob=new Blob([csvData()],{type:'text/csv;charset=utf-8;'});
+const url=URL.createObjectURL(blob);
+const a=document.createElement('a');a.href=url;a.download='SnapClass_Attendance.csv';
+document.body.appendChild(a);a.click();a.remove();
+setTimeout(()=>URL.revokeObjectURL(url),1500);
+$('csvtext').style.display='block';$('csvtext').value=csvData();
+$('message').textContent='CSV report prepared. If download does not start, use Copy CSV Text.';
+};
+$('copy').onclick=async()=>{
+$('csvtext').style.display='block';$('csvtext').value=csvData();
+$('csvtext').focus();$('csvtext').select();
+try{await navigator.clipboard.writeText(csvData());$('message').textContent='CSV text copied. You can paste it into a text file.'}
+catch(e){$('message').textContent='CSV text is selected. Long-press and choose Copy.'}
+};
+render();
+</script>
+</body>
+</html>
